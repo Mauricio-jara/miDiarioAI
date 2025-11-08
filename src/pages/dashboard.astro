@@ -1,0 +1,12 @@
+---
+import Layout from "../layouts/Layout.astro";
+import EmotionStats from "../components/dashboard/EmotionStats.jsx";
+---
+
+<Layout nombre="César">
+  <section class="flex justify-center">
+    <div class="w-full max-w-3xl">
+      <EmotionStats client:load />
+    </div>
+  </section>
+</Layout>

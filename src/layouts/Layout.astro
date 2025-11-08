@@ -1,22 +1,30 @@
-<!doctype html>
-<html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro Basics</title>
-	</head>
-	<body class="bg-[#EBF2FC]">
-		<slot />
-	</body>
-</html>
+---
+import "../assets/styles/global.css";
+import Navbar from "../components/ui/Navbar.astro";
+import BottomNav from "../components/ui/BottomNav.astro";
+const { nombre = "César" } = Astro.props;
+---
 
-<style>
-	html,
-	body {
-		margin: 0;
-		width: 100%;
-		height: 100%;
-	}
-</style>
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="MiDiarioIA - Diario emocional con IA empática" />
+    <title>MiDiarioIA</title>
+    <link rel="icon" type="image/png" href="/logo.png" />
+  </head>
+
+  <body class="min-h-screen bg-[#EBF2FC] flex flex-col font-sans text-gray-800">
+    <!-- Encabezado -->
+    <Navbar nombre={nombre} />
+
+    <!-- Contenido dinámico -->
+    <main class="flex-1 max-w-6xl w-full mx-auto p-6 pb-20">
+      <slot />
+    </main>
+
+    <!-- Navegación inferior -->
+    <BottomNav />
+  </body>
+</html>

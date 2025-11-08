@@ -1,0 +1,12 @@
+---
+import Layout from "../layouts/Layout.astro";
+import ChatBox from "../components/chat/ChatBox.jsx";
+---
+
+<Layout nombre="César">
+  <section class="flex justify-center">
+    <div class="w-full max-w-3xl">
+      <ChatBox client:load />
+    </div>
+  </section>
+</Layout>
