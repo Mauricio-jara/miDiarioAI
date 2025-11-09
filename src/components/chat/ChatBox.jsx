@@ -1,5 +1,3 @@
-// ruta: mauricio-jara/midiarioai/miDiarioAI-lucas/src/components/chat/ChatBox.jsx
-
 import { useState, useEffect, useRef } from "react";
 import MessageBubble from "./MessageBubble.jsx";
 import { useApi } from "../../hooks/useApi.js";
@@ -9,85 +7,84 @@ export default function ChatBox({ accessToken }) {
     const [mensajes, setMensajes] = useState([]);
     const [texto, setTexto] = useState("");
 
-    // El loading del hook es bueno para la UI
     const { enviarMensaje, loading: apiLoading } = useApi(accessToken);
 
-    // (NUEVO) Usamos un Ref para un bloqueo SÍNCRONO e inmediato
+    // Previene envíos simultáneos
     const isSendingRef = useRef(false);
-
-    // Mantenemos un estado de UI para deshabilitar el botón (asíncrono)
-    const [isSendingUI, setIsSendingUI] = useState(false);
 
     const messagesEndRef = useRef(null);
 
-    // Cargar historial de chat (sin cambios)
+    // Cargar historial
     useEffect(() => {
         const cargarHistorial = async () => {
             try {
                 const res = await fetch(endpoints.historial, {
                     headers: { "Authorization": `Bearer ${accessToken}` }
                 });
+
                 if (!res.ok) throw new Error("No se pudo cargar el historial.");
 
                 const data = await res.json();
                 setMensajes(data.reverse());
-
             } catch (error) {
                 console.error("Error cargando historial:", error);
-                setMensajes([{ rol: "assistant", texto: "¡Hola! ¿En qué puedo ayudarte hoy? 💜" }]);
+                setMensajes([
+                    { rol: "assistant", texto: "¡Hola! ¿En qué puedo ayudarte hoy? 💜" }
+                ]);
             }
         };
         if (accessToken) cargarHistorial();
     }, [accessToken]);
 
-    // Auto-scroll (sin cambios)
+    // Scroll automático
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [mensajes]);
 
-
-    // Lógica de envío (con bloqueo síncrono)
-    const handleEnviar = async (e) => {
-        if (e) e.preventDefault();
-
-        // (NUEVO) Revisar el Ref síncrono
-        if (isSendingRef.current) return;
-
+    // Envío del mensaje
+    const handleEnviar = async () => {
         const textoParaEnviar = texto.trim();
-        if (!textoParaEnviar || apiLoading) return;
+        if (!textoParaEnviar) return;
+        if (apiLoading || isSendingRef.current) return;
 
-        // (NUEVO) Bloquear síncronamente
+        // Bloqueo sincronizado
         isSendingRef.current = true;
 
-        // Actualizar la UI
-        setIsSendingUI(true);
+        // Limpiar input visualmente
         setTexto("");
-        const nuevo = { rol: "user", texto: textoParaEnviar };
-        setMensajes((prev) => [...prev, nuevo]);
 
         try {
+            console.log("→ ENVIANDO AL BACKEND:", textoParaEnviar);
+
+            // Mandamos al backend y esperamos confirmación  
             const res = await enviarMensaje(textoParaEnviar);
-            const respuestaIA = {
-                rol: "assistant",
-                texto: res.respuesta || "No se pudo obtener respuesta.",
-            };
-            setMensajes((prev) => [...prev, respuestaIA]);
+
+            console.log("← RESPUESTA BACKEND:", res);
+
+            // Solo ahora agregamos los mensajes a la UI
+            setMensajes((prev) => [
+                ...prev,
+                { rol: "user", texto: textoParaEnviar },
+                { rol: "assistant", texto: res.respuesta || "No se pudo obtener respuesta." }
+            ]);
 
         } catch (error) {
-            const errorIA = {
-                rol: "assistant",
-                texto: "¡Uy! Parece que tuve un problema. Inténtalo de nuevo."
-            };
-            setMensajes((prev) => [...prev, errorIA]);
+            console.error("Error enviando mensaje:", error);
+            setMensajes((prev) => [
+                ...prev,
+                { rol: "assistant", texto: "¡Uy! Parece que tuve un problema. Inténtalo de nuevo." }
+            ]);
         } finally {
-            // (NUEVO) Desbloquear síncronamente
             isSendingRef.current = false;
-            setIsSendingUI(false);
         }
     };
 
-    // El estado de carga ahora combina el hook y el estado de la UI
-    const isLoading = apiLoading || isSendingUI;
+    const handleKeyPress = (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            handleEnviar();
+        }
+    };
 
     return (
         <div className="flex flex-col justify-between w-full h-[600px] bg-white/80 p-6 rounded-2xl shadow-md backdrop-blur-md">
@@ -105,23 +102,27 @@ export default function ChatBox({ accessToken }) {
                 <div ref={messagesEndRef} />
             </div>
 
-            <form onSubmit={handleEnviar} className="flex items-center gap-3 mt-2">
+            <div className="flex items-center gap-3 mt-2">
                 <input
                     type="text"
                     value={texto}
                     onChange={(e) => setTexto(e.target.value)}
+                    onKeyDown={handleKeyPress}
                     placeholder="Escribe un mensaje..."
                     className="flex-1 p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white/90"
-                    disabled={isLoading}
+                    disabled={apiLoading}
                 />
+
+                {/* Botón ya no usa type="submit" para evitar envíos duplicados */}
                 <button
-                    type="submit"
-                    disabled={isLoading}
+                    type="button"
+                    onClick={handleEnviar}
+                    disabled={apiLoading}
                     className="px-5 py-3 bg-blue-500 text-white font-medium rounded-xl hover:bg-blue-600 transition disabled:bg-blue-300"
                 >
-                    {isLoading ? "..." : "Enviar"}
+                    {apiLoading ? "..." : "Enviar"}
                 </button>
-            </form>
+            </div>
         </div>
     );
 }
