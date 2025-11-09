@@ -1,0 +1,46 @@
+---
+export const prerender = false;
+import Layout from "../layouts/Layout.astro";
+import Navbar from "../components/ui/Navbar.astro";
+import createSupabaseClient from "../lib/supabase";
+
+const supabase = createSupabaseClient(Astro);
+const { data } = await supabase.auth.getSession();
+
+// Obtenemos los datos del usuario
+const nombre = data.session?.user?.user_metadata?.nombre ?? "Usuario";
+const email = data.session?.user?.email ?? "No se encontró email";
+---
+
+<Layout nombre={nombre}>
+    <Navbar nombre={nombre} />
+
+    <section class="flex justify-center">
+        <div class="w-full max-w-xl bg-white/80 p-6 rounded-2xl shadow-md backdrop-blur-md">
+
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">
+                Mi Perfil
+            </h2>
+
+            <div class="mb-4">
+                <p class="text-sm text-gray-600">Nombre:</p>
+                <p class="text-lg text-gray-800 font-medium">{nombre}</p>
+            </div>
+
+            <div class="mb-6">
+                <p class="text-sm text-gray-600">Email:</p>
+                <p class="text-lg text-gray-800 font-medium">{email}</p>
+            </div>
+
+            <form action="/api/logout" method="POST">
+                <button
+                        type="submit"
+                        class="w-full py-3 rounded-xl text-white font-medium transition-all bg-red-500 hover:bg-red-600 active:scale-95 shadow-md"
+                >
+                    Cerrar Sesión
+                </button>
+            </form>
+
+        </div>
+    </section>
+</Layout>
