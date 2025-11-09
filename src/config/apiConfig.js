@@ -4,5 +4,6 @@ export const endpoints = {
     chat: `${API_BASE_URL}/chat/invoke`,
     historial: `${API_BASE_URL}/chat/history`,
     diario: `${API_BASE_URL}/diario`,
-    resumen: `${API_BASE_URL}/dashboard`
+    resumen: `${API_BASE_URL}/dashboard`,
+    consejos: `${API_BASE_URL}/consejos`
 };

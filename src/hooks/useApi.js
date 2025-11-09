@@ -53,6 +53,17 @@ export function useApi(accessToken) {
         return await res.json();
     }, [getAuthHeaders]); // Depende de getAuthHeaders
 
+    const getConsejo = useCallback(async (query) => {
+        setLoading(true);
+        const res = await fetch(endpoints.consejos, {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ query }),
+        });
+        setLoading(false);
+        return await res.json();
+    }, [getAuthHeaders]);
+
     // Devolvemos las funciones memorizadas
-    return { enviarMensaje, guardarEntrada, getResumen, loading };
+    return { enviarMensaje, guardarEntrada, getResumen, getConsejo, loading };
 }
