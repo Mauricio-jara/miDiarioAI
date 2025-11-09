@@ -3,49 +3,67 @@ import Button from "../ui/Button.jsx";
 import InputArea from "../ui/InputArea.jsx";
 import { useApi } from "../../hooks/useApi";
 
-export default function DiarioForm() {
-  const [texto, setTexto] = useState("");
-  const [resultado, setResultado] = useState(null);
-  const { guardarEntrada, loading } = useApi();
-  const usuario_id = "c1b8e6d0-0000-0000-0000-000000000001"; // Reemplázalo con ID real (o auth de Supabase)
+// Aceptar 'accessToken' como prop
+export default function DiarioForm({ accessToken }) {
+    const [texto, setTexto] = useState("");
+    const [resultado, setResultado] = useState(null);
 
-  const handleGuardar = async () => {
-    if (!texto.trim()) return;
-    const res = await guardarEntrada(usuario_id, texto);
-    setResultado(res);
-    setTexto("");
-  };
+    // Pasar token al hook
+    const { guardarEntrada, loading } = useApi(accessToken);
 
-  return (
-    <div className="bg-white/80 rounded-2xl p-6 shadow-md backdrop-blur-md">
-      <h2 className="text-xl font-semibold text-gray-700 mb-3">
-        Escribe aquí tu entrada de hoy ✍️
-      </h2>
+    const handleGuardar = async () => {
+        if (!texto.trim()) return;
 
-      <InputArea
-        value={texto}
-        onChange={setTexto}
-        placeholder="Escribe cómo te sientes hoy..."
-      />
+        // Ya no se pasa 'usuario_id'
+        const res = await guardarEntrada(texto);
 
-      <div className="mt-4">
-        <Button
-          label={loading ? "Analizando..." : "Analizar y Guardar"}
-          onClick={handleGuardar}
-          disabled={loading}
-        />
-      </div>
+        // Verificamos si la respuesta del backend fue exitosa
+        if (res && res.emocion_predominante) {
+            setResultado(res);
+            setTexto("");
+        } else {
+            // Manejar un posible error del backend
+            setResultado({
+                emocion_predominante: "Error",
+                resumen_ia: res.detail || "No se pudo analizar la entrada."
+            });
+        }
+    };
 
-      {resultado && (
-        <div className="mt-6 p-4 border border-blue-100 bg-blue-50 rounded-xl text-gray-700">
-          <p>
-            <strong>Emoción detectada:</strong> {resultado.emocion_predominante}
-          </p>
-          <p>
-            <strong>Resumen:</strong> {resultado.resumen}
-          </p>
+    return (
+        <div className="bg-white/80 rounded-2xl p-6 shadow-md backdrop-blur-md">
+            <h2 className="text-xl font-semibold text-gray-700 mb-3">
+                Escribe aquí tu entrada de hoy ✍️
+            </h2>
+
+            <InputArea
+                value={texto}
+                onChange={setTexto}
+                placeholder="Escribe cómo te sientes hoy..."
+            />
+
+            <div className="mt-4">
+                <Button
+                    label={loading ? "Analizando..." : "Analizar y Guardar"}
+                    onClick={handleGuardar}
+                    disabled={loading || !texto.trim()} // Deshabilitar si no hay texto
+                />
+            </div>
+
+            {resultado && (
+                <div className={`mt-6 p-4 border rounded-xl ${
+                    resultado.emocion_predominante === "Error"
+                        ? "border-red-200 bg-red-50 text-red-700"
+                        : "border-blue-100 bg-blue-50 text-gray-700"
+                }`}>
+                    <p>
+                        <strong>Emoción detectada:</strong> {resultado.emocion_predominante}
+                    </p>
+                    <p>
+                        <strong>Resumen:</strong> {resultado.resumen_ia}
+                    </p>
+                </div>
+            )}
         </div>
-      )}
-    </div>
-  );
+    );
 }

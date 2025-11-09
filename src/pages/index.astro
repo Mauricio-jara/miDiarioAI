@@ -1,19 +1,32 @@
 ---
+export const prerender = false;
 import Layout from "../layouts/Layout.astro";
 import Navbar from "../components/ui/Navbar.astro";
 import DiarioForm from "../components/home/DiarioForm.jsx";
 import EmotionCard from "../components/ui/EmotionCard.jsx";
-const { nombre = "César" } = Astro.props;
+import createSupabaseClient from "../lib/supabase"; // Importar cliente
+
+const supabase = createSupabaseClient(Astro);
+const { data } = await supabase.auth.getSession();
+const accessToken = data.session?.access_token ?? null;
+
+if (!accessToken) {
+    return Astro.redirect("/login");
+}
+
+// Obtenemos el nombre del usuario de la metadata
+const nombre = data.session?.user?.user_metadata?.nombre ?? "Usuario";
 ---
 
-<Layout nombre="César">
-  <Navbar nombre={nombre} />
-  <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <div class="col-span-2">
-      <DiarioForm client:load />
-    </div>
-    <div>
-      <EmotionCard client:load />
-    </div>
-  </section>
+<Layout nombre={nombre}>
+    <Navbar nombre={nombre} />
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="col-span-2">
+            {/* Pasamos el token como prop */}
+            <DiarioForm client:load accessToken={accessToken} />
+        </div>
+        <div>
+            <EmotionCard client:load />
+        </div>
+    </section>
 </Layout>

@@ -1,15 +1,27 @@
 ---
+export const prerender = false;
 import Layout from "../layouts/Layout.astro";
 import Navbar from "../components/ui/Navbar.astro";
 import ChatBox from "../components/chat/ChatBox.jsx";
-const { nombre = "César" } = Astro.props;
+import createSupabaseClient from "../lib/supabase"; // Importar cliente
+
+const supabase = createSupabaseClient(Astro);
+const { data } = await supabase.auth.getSession();
+const accessToken = data.session?.access_token ?? null;
+
+if (!accessToken) {
+    return Astro.redirect("/login");
+}
+
+const nombre = data.session?.user?.user_metadata?.nombre ?? "Usuario";
 ---
 
-<Layout nombre="César">
-  <Navbar nombre={nombre} />
-  <section class="flex justify-center">
-    <div class="w-full max-w-3xl">
-      <ChatBox client:load />
-    </div>
-  </section>
+<Layout nombre={nombre}>
+    <Navbar nombre={nombre} />
+    <section class="flex justify-center">
+        <div class="w-full max-w-3xl">
+            {/* Pasamos el token como prop */}
+            <ChatBox client:load accessToken={accessToken} />
+        </div>
+    </section>
 </Layout>
