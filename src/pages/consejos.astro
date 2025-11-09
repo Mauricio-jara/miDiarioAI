@@ -1,0 +1,27 @@
+---
+export const prerender = false;
+import Layout from "../layouts/Layout.astro";
+import Navbar from "../components/ui/Navbar.astro";
+import createSupabaseClient from "../lib/supabase";
+import ConsejosBuscador from "../components/consejos/ConsejosBuscador.jsx";
+
+const supabase = createSupabaseClient(Astro);
+const { data } = await supabase.auth.getSession();
+const accessToken = data.session?.access_token ?? null;
+
+// El middleware ya protege esta página, pero validamos el token
+if (!accessToken) {
+    return Astro.redirect("/login");
+    }
+
+const nombre = data.session?.user?.user_metadata?.nombre ?? "Usuario";
+---
+
+<Layout nombre={nombre}>
+    <Navbar nombre={nombre} />
+    <section class="flex justify-center">
+        <div class="w-full max-w-3xl">
+            <ConsejosBuscador client:load accessToken={accessToken} />
+        </div>
+    </section>
+</Layout>
