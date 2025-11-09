@@ -1,9 +1,12 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import Navbar from "../components/ui/Navbar.astro";
 import EmotionStats from "../components/dashboard/EmotionStats.jsx";
+const { nombre = "César" } = Astro.props;
 ---
 
 <Layout nombre="César">
+  <Navbar nombre={nombre} />
   <section class="flex justify-center">
     <div class="w-full max-w-3xl">
       <EmotionStats client:load />

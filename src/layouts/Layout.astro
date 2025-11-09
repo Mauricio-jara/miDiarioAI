@@ -1,8 +1,6 @@
 ---
 import "../assets/styles/global.css";
-import Navbar from "../components/ui/Navbar.astro";
 import BottomNav from "../components/ui/BottomNav.astro";
-const { nombre = "César" } = Astro.props;
 ---
 
 <!DOCTYPE html>
@@ -17,7 +15,6 @@ const { nombre = "César" } = Astro.props;
 
   <body class="min-h-screen bg-[#EBF2FC] flex flex-col font-sans text-gray-800">
     <!-- Encabezado -->
-    <Navbar nombre={nombre} />
 
     <!-- Contenido dinámico -->
     <main class="flex-1 max-w-6xl w-full mx-auto p-6 pb-20">

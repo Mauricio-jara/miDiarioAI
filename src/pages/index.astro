@@ -1,10 +1,13 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import Navbar from "../components/ui/Navbar.astro";
 import DiarioForm from "../components/home/DiarioForm.jsx";
 import EmotionCard from "../components/ui/EmotionCard.jsx";
+const { nombre = "César" } = Astro.props;
 ---
 
 <Layout nombre="César">
+  <Navbar nombre={nombre} />
   <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
     <div class="col-span-2">
       <DiarioForm client:load />
