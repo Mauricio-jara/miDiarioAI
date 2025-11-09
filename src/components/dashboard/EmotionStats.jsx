@@ -1,18 +1,20 @@
+// ruta: mauricio-jara/midiarioai/miDiarioAI-4ef41acf67fd95861c9f4c8bb8e6ec972e919610/src/components/dashboard/EmotionStats.jsx
 import { useEffect, useState } from "react";
-import { useApi } from "../../hooks/useApi"; // Importar el hook
+import { useApi } from "../../hooks/useApi";
+// (NUEVO) Importar componentes de Recharts
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
-// Aceptar 'accessToken'
+// (NUEVO) Paleta de colores para el gráfico
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#E36397'];
+
 export default function EmotionStats({ accessToken }) {
     const [resumen, setResumen] = useState(null);
-
-    // Usar el hook con el token y obtener la nueva función
     const { getResumen, loading } = useApi(accessToken);
 
     useEffect(() => {
         const cargar = async () => {
             if (!accessToken) return;
             try {
-                // Usar la nueva función del hook
                 const data = await getResumen();
                 setResumen(data);
             } catch (error) {
@@ -21,7 +23,14 @@ export default function EmotionStats({ accessToken }) {
             }
         };
         cargar();
-    }, [accessToken, getResumen]); // Añadir dependencias
+    }, [accessToken, getResumen]);
+
+    // (NUEVO) Transformar los datos para el gráfico
+    const chartData = Object.entries(resumen?.conteo_emociones || {}).map(([name, value]) => ({
+        // Capitalizar la primera letra
+        name: name.charAt(0).toUpperCase() + name.slice(1),
+        value: value,
+    }));
 
     if (loading || !resumen)
         return (
@@ -30,7 +39,6 @@ export default function EmotionStats({ accessToken }) {
             </div>
         );
 
-    // Manejar si el backend devuelve un error
     if (resumen.error)
         return (
             <div className="bg-white/80 p-6 rounded-2xl shadow-md backdrop-blur-md w-full text-red-500 text-center">
@@ -38,51 +46,80 @@ export default function EmotionStats({ accessToken }) {
             </div>
         );
 
-    // Adaptamos el JSX a la data real del backend
     return (
         <div className="bg-white/80 p-6 rounded-2xl shadow-md backdrop-blur-md w-full">
             <h2 className="text-lg font-semibold text-gray-700 mb-3">
                 Resumen Emocional
             </h2>
 
-            <p className="text-sm text-gray-600 mb-4">
-                Has escrito un total de <span className="font-bold text-blue-600">{resumen.total_entradas_diario || 0}</span> entradas en tu diario.
-            </p>
-
-            <div className="flex flex-col sm:flex-row justify-around items-center mt-4 p-4 bg-blue-50 rounded-xl space-y-2 sm:space-y-0">
-                <span className="text-gray-700 text-sm">Emoción más frecuente:</span>
-                <span className="text-xl font-semibold text-blue-600 capitalize">
-          {resumen.emocion_mas_frecuente || 'N/A'}
-        </span>
-            </div>
-
-            <div className="mt-5 bg-blue-50 p-4 rounded-xl text-gray-700 text-sm">
-                <p className="font-medium mb-1">
-                    🧠 Promedio Sentimiento General: {resumen.promedio_sentimiento_general}
-                </p>
-                <p className="mt-2 text-xs text-gray-500">
-                    (Un puntaje de -1.0 es muy negativo, y 1.0 es muy positivo)
-                </p>
-            </div>
-
-            {/* Mostramos el desglose de emociones */}
-            {resumen.conteo_emociones && Object.keys(resumen.conteo_emociones).length > 0 && (
-                <div className="mt-5">
-                    <h3 className="text-md font-semibold text-gray-600 mb-2">Desglose de Emociones:</h3>
-                    <div className="flex flex-wrap gap-2">
-                        {Object.entries(resumen.conteo_emociones).map(([emocion, valor]) => (
-                            <div key={emocion} className="flex flex-col items-center bg-white p-3 rounded-lg shadow-sm border border-gray-100">
-                <span className="text-lg font-semibold text-blue-500">
-                  {valor}
-                </span>
-                                <span className="text-gray-600 text-sm capitalize">
-                  {emocion}
-                </span>
-                            </div>
-                        ))}
-                    </div>
+            {/* Resumen de IA (que ahora se basa en el sentimiento interpretado) */}
+            {resumen.resumen_ia && (
+                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl text-gray-700">
+                    <p className="text-sm">{resumen.resumen_ia}</p>
+                    <p className="text-sm font-medium text-blue-600 mt-2">💡 {resumen.recomendacion_ia}</p>
                 </div>
             )}
+
+            {/* (MODIFICADO) Reemplazamos el desglose de texto por el gráfico */}
+            {chartData.length > 0 ? (
+                <div className="mt-5">
+                    <h3 className="text-md font-semibold text-gray-600 mb-2 text-center">Desglose de Emociones</h3>
+                    {/* Contenedor responsivo para el gráfico */}
+                    <div style={{ width: '100%', height: 250 }}>
+                        <ResponsiveContainer>
+                            <PieChart>
+                                <Pie
+                                    data={chartData}
+                                    cx="50%"
+                                    cy="50%"
+                                    labelLine={false}
+                                    // Etiqueta personalizada
+                                    label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                                    outerRadius={80}
+                                    innerRadius={40} // <-- Esto lo hace un gráfico de dona
+                                    fill="#8884d8"
+                                    dataKey="value"
+                                    paddingAngle={3}
+                                >
+                                    {chartData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip />
+                                <Legend />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+            ) : (
+                <p className="text-sm text-gray-500 text-center mt-4">
+                    Escribe en tu diario para ver tu desglose de emociones.
+                </p>
+            )}
+
+            {/* (MODIFICADO) Reorganizado para mejor visualización */}
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-blue-50 p-4 rounded-xl text-gray-700 text-center">
+                    <p className="font-medium text-gray-600">Emoción Frecuente</p>
+                    <p className="text-2xl font-semibold text-blue-600 capitalize">{resumen.emocion_mas_frecuente || 'N/A'}</p>
+                </div>
+                <div className="bg-blue-50 p-4 rounded-xl text-gray-700 text-center">
+                    <p className="font-medium text-gray-600">Total de Entradas</p>
+                    <p className="text-2xl font-semibold text-blue-600">{resumen.total_entradas_diario || 0}</p>
+                </div>
+            </div>
+
+            {/* (MODIFICADO) Mostramos la interpretación */}
+            <div className="mt-4 bg-blue-50 p-4 rounded-xl text-gray-700 text-center">
+                <p className="font-medium text-gray-600">Sentimiento General</p>
+                <p className="text-2xl font-semibold text-blue-600">
+                    {resumen.interpretacion_sentimiento || 'Neutral'}
+                </p>
+                <p className="mt-2 text-xs text-gray-500">
+                    (Puntaje numérico: {resumen.promedio_sentimiento_general})
+                </p>
+            </div>
+
         </div>
     );
 }

@@ -1,7 +1,7 @@
 import createSupabaseClient from "./lib/supabase";
 
 
-const protectedRoutes = ["/", "/chat", "/dashboard", "/perfil"];
+const protectedRoutes = ["/", "/chat", "/dashboard", "/perfil", "/consejos"];
 const publicRoutes = ["/login", "/register"];
 
 export async function onRequest(context, next) {
