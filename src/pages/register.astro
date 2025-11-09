@@ -13,34 +13,58 @@ if (Astro.request.method === "POST") {
         const formData = await Astro.request.formData();
         const rawData = Object.fromEntries(formData);
 
-        // 2. Validación con el nuevo schema (solo nombre, email, password)
+        // 1. Validación con Zod (sin cambios)
         const result = registerSchema.safeParse(rawData);
 
         if (!result.success) {
             error = result.error.errors[0].message;
         } else {
-            // 3. Obtenemos los datos simplificados
             const { email, password, nombre } = result.data;
 
-            // 4. Llamada a Supabase (adaptada a tu schema)
-            const { data, error: signUpError } = await supabase.auth.signUp({
+            // 2. Crear el usuario en Supabase Auth
+            const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
                 email: email,
                 password: password,
-                options: {
-                    data: {
-                        // Esto poblará la columna 'nombre' en tu tabla 'public.usuarios'
-                        // (Supabase maneja el 'id' y 'email' automáticamente)
-                        nombre: nombre,
-                    },
-                },
+                // Quitamos options.data para hacerlo manual y asegurar consistencia
             });
 
             if (signUpError) {
                 throw new Error(signUpError.message);
             }
 
-            return Astro.redirect("/"); // Redirige al Home
+            if (!signUpData.user) {
+                throw new Error("No se pudo crear el usuario en Auth.");
+            }
 
+            // 3. (NUEVO) Insertar en la tabla 'public.usuarios'
+            // Esto asegura que el backend (user_service.py) pueda encontrar al usuario
+            const { error: profileError } = await supabase
+                .from("usuarios")
+                .insert({
+                    id: signUpData.user.id,
+                    email: signUpData.user.email,
+                    nombre: nombre
+                });
+
+            if (profileError) {
+                // Idealmente, aquí se debería borrar el usuario de Auth para un rollback
+                throw new Error(`Error al crear el perfil de usuario: ${profileError.message}`);
+            }
+
+            // 4. (NUEVO) Iniciar sesión para establecer la cookie de sesión
+            // signUp() ya no inicia sesión automáticamente en esta versión
+            const { error: signInError } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
+
+            if (signInError) {
+                // Si esto falla, el usuario fue creado pero debe loguearse manualmente
+                throw new Error("Error al iniciar sesión después de registrarse. Por favor, inicia sesión manualmente.");
+            }
+
+            // 5. Redirigir al Home (ya autenticado)
+            return Astro.redirect("/");
         }
     } catch (e: any) {
         error = e.message || "Error al crear la cuenta";
